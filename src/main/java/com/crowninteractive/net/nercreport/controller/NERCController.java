@@ -70,6 +70,21 @@ public class NERCController {
 //        return new ResponseEntity("NERC Report Request Received And Is Been Processed", HttpStatus.OK);
         return new Gson().toJson(awe);
     }
+    
+    @GetMapping("start_report_v2")
+    public String startReportV2(@RequestParam("from") String from,
+            @RequestParam("to") String to,
+            @RequestParam("email") String email) {
+        try {
+            reportReceiver.processWriteV5(from, to, email);
+            awe = new BaseResponse(0, "success");
+        } catch (IOException | NercReportException | EmailException ex) {
+            Logger.getLogger(NERCController.class.getName()).log(Level.SEVERE, null, ex);
+        }
+
+//        return new ResponseEntity("NERC Report Request Received And Is Been Processed", HttpStatus.OK);
+        return new Gson().toJson(awe);
+    }
 
 //    @GetMapping("extra_data")
 //    public ResponseEntity extraData(@RequestParam("ticketId") int ticketId) throws ParseException {

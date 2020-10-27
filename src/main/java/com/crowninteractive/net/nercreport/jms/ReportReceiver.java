@@ -8,7 +8,7 @@ package com.crowninteractive.net.nercreport.jms;
 import com.crowninteractive.net.nercreport.domainobject.Users;
 import com.crowninteractive.net.nercreport.domainobject.WorkOrder;
 import com.crowninteractive.net.nercreport.dto.BaseResponse;
-import com.crowninteractive.net.nercreport.dto.NercReport;
+import com.crowninteractive.net.nercreport.dto.ExtraDataDetails;
 import com.crowninteractive.net.nercreport.exception.NercReportException;
 import com.crowninteractive.net.nercreport.repository.WorkOrderDao;
 import com.crowninteractive.net.nercreport.service.SendEmail;
@@ -19,13 +19,17 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 import javax.jms.Message;
 import javax.jms.TextMessage;
+import org.apache.commons.mail.EmailAttachment;
 import org.apache.commons.mail.EmailException;
+import org.apache.commons.mail.HtmlEmail;
 
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
@@ -456,7 +460,7 @@ public class ReportReceiver {
                 String extraData = wdao.getWorkOrderExtraData(w.getTicketId());
                 if (extraData != null) {
 
-                    NercReport customerDetails = getComplaintDetails(w.getTicketId());
+                    ExtraDataDetails customerDetails = getComplaintDetails(w.getTicketId());
 
                     logger.info("EXTRA DATA IS >>>> " + extraData);
 //                String[] names = wdao.getFirstAndLastNames(w);
@@ -558,57 +562,40 @@ public class ReportReceiver {
         logger.info("--------------New Nerc report template ---------");
         logger.info("--------------Email-------------" + email);
 
-        Users u = wdao.findByEmail(email);
-        if (u.getDistricts() == null) {
-            logger.info("-----------No district for user ---------" + email);
-            return;
-        }
-        String commaSeparated = u.getDistricts();
+        XSSFWorkbook workbook = new XSSFWorkbook();
 
-        String queueTypeId = wdao.getQueueTypeIds(email);
-        String tariffs = wdao.getAssignedTariffs(email);
+        CellStyle headerStyle = workbook.createCellStyle();
+        Font font = workbook.createFont();
+        font.setFontHeight((short) 200);
 
-        List<String> districts = new ArrayList<String>(Arrays.asList(commaSeparated.split("\\s*,\\s*")));
+        CellStyle h = workbook.createCellStyle();
+        Font f = workbook.createFont();
+        f.setBoldweight(XSSFFont.BOLDWEIGHT_BOLD);
+        f.setFontHeight((short) 300);
+        h.setFont(f);
+        h.setAlignment(CellStyle.ALIGN_CENTER);
 
-        logger.info("----------districts----------------" + districts);
+        headerStyle.setFont(font);
 
-        List<String> files = new ArrayList();
+//            List<WorkOrder> lwListt = wdao.getWorkOrderByParamsV2(districts.get(i), from, to, queueTypeId, tariffs);
+        List<WorkOrder> lwListt = wdao.getWorkOrdersforACustomer(from, to);
 
-        for (int i = 0; i < districts.size(); i++) {
+        XSSFSheet sheet = (XSSFSheet) workbook.createSheet(from + "" + to);
 
-            XSSFWorkbook workbook = new XSSFWorkbook();
+        int rownum = 6;
+        double count = 1;
+        for (WorkOrder w : lwListt) {
+            Cell info0 = sheet.createRow(2).createCell(0);
+            info0.setCellStyle(h);
+            info0.setCellValue("EKO ELECTRICITY DISTRIBUTION COMPANY (EKEDP)");
+            sheet.addMergedRegion(new CellRangeAddress(
+                    2, //first row (0-based)
+                    2, //last row  (0-based)
+                    0, //first column (0-based)
+                    13 //last column  (0-based)
+            ));
 
-            CellStyle headerStyle = workbook.createCellStyle();
-            Font font = workbook.createFont();
-            font.setFontHeight((short) 200);
-
-            CellStyle h = workbook.createCellStyle();
-            Font f = workbook.createFont();
-            f.setBoldweight(XSSFFont.BOLDWEIGHT_BOLD);
-            f.setFontHeight((short) 300);
-            h.setFont(f);
-            h.setAlignment(CellStyle.ALIGN_CENTER);
-
-            headerStyle.setFont(font);
-
-            List<WorkOrder> lwListt = wdao.getWorkOrderByParamsV2(districts.get(i), from, to, queueTypeId, tariffs);
-
-            XSSFSheet sheet = (XSSFSheet) workbook.createSheet(districts.get(i));
-
-            logger.info(" ----- Processing Sheet --------------" + districts.get(i));
-            int rownum = 6;
-            double count = 1;
-            for (WorkOrder w : lwListt) {
-                Cell info0 = sheet.createRow(2).createCell(0);
-                info0.setCellStyle(h);
-                info0.setCellValue("EKO ELECTRICITY DISTRIBUTION COMPANY (EKEDP)");
-                sheet.addMergedRegion(new CellRangeAddress(
-                        2, //first row (0-based)
-                        2, //last row  (0-based)
-                        0, //first column (0-based)
-                        13 //last column  (0-based)
-                ));
-
+            logger.info("WORKORDER >>> " + w);
 //                Cell info1 = sheet.createRow(3).createCell(13);
 //                info1.setCellValue(from + " - " + to);
 //                info1.setCellValue(DateFormatter.getSimpleDate(from) + " - " + DateFormatter.getSimpleDate(to));
@@ -616,130 +603,105 @@ public class ReportReceiver {
 //                Cell info2 = sheet.getRow(3).createCell(12);
 //                info2.setCellValue("Month : ");
 //                info2.setCellStyle(headerStyle);
-                Row xheader = sheet.createRow(4);
-                String[] header = {"DISCO_REF_NO", "CUSTOMER_FIRSTNAME",
-                    "CUSTOMER_LASTNAME",
-                    "CUSTOMER_HOUSENO",
-                    "CUSTOMER_STREETNAME",
-                    "CUSTOMER_STATE_OF_RESIDENCE", "CUSTOMER_Local_Government_Area", "CUSTOMER_AREA",
-                    "PHONE NUMBER", "EMAIL",
-                    "ACCOUNT_NUMBER", "DISCO_CODE", "Complaint Category", "Complaint Sub Category",
-                    "BUSINESS UNIT", "STATE", "FORUM NAME", "COMPLAINT_HOUSENO", "COMPLAINT_STREETNAME",
-                    "COMPLAINT_Local_Government_Area", "COMPLAINT_AREA", "CIN", "METER NUMBER",
-                    "CUSTOMER CLASS", "COMPLAINT DESCRIPTION", "COMPLAINT DATE", "ASSIGNED NAME",
-                    "RESOLVE DATE", "STATUS", "REMARK"};
-                for (int col = 0; col < 30; col++) {
-                    Cell cell = xheader.createCell(col);
-                    cell.setCellValue(header[col]);
-                    cell.setCellStyle(headerStyle);
+            Row xheader = sheet.createRow(4);
+            String[] header = {"DISCO_REF_NO", "CUSTOMER_FIRSTNAME",
+                "CUSTOMER_LASTNAME",
+                "CUSTOMER_HOUSENO",
+                "CUSTOMER_STREETNAME",
+                "CUSTOMER_STATE_OF_RESIDENCE", "CUSTOMER_Local_Government_Area", "CUSTOMER_AREA",
+                "PHONE NUMBER", "EMAIL",
+                "ACCOUNT_NUMBER", "DISCO_CODE", "Complaint Category", "Complaint Sub Category",
+                "BUSINESS UNIT", "STATE", "FORUM NAME", "COMPLAINT_HOUSENO", "COMPLAINT_STREETNAME",
+                "COMPLAINT_Local_Government_Area", "COMPLAINT_AREA", "CIN", "METER NUMBER",
+                "CUSTOMER CLASS", "COMPLAINT DESCRIPTION", "COMPLAINT DATE", "ASSIGNED NAME",
+                "RESOLVE DATE", "STATUS", "REMARK"};
+            for (int col = 0; col < 30; col++) {
+                Cell cell = xheader.createCell(col);
+                cell.setCellValue(header[col]);
+                cell.setCellStyle(headerStyle);
 //                    cell.setCellStyle(font.getBoldweight());
-                    //  sheet.autoSizeColumn(col);/
-                }
+                //  sheet.autoSizeColumn(col);/
+            }
 
-                Row row = sheet.createRow(rownum++);
-                Cell cell = row.createCell(0);
-                cell.setCellValue("3065412");
+            Row row = sheet.createRow(rownum++);
+            Cell cell = row.createCell(0);
+            cell.setCellValue("3065412");
 
-                logger.info("EXTRA DATA IS >>>> " + wdao.getWorkOrderExtraData(w.getTicketId()));
-                String extraData = wdao.getWorkOrderExtraData(w.getTicketId());
+//            logger.info("EXTRA DATA IS >>>> " + wdao.getWorkOrderExtraData(w.gwetTicketId()));
+            logger.info("EXTRA DATA IS >>>> " + wdao.getWorkOrderExtraData(1017));
+            String extraData = wdao.getWorkOrderExtraData(1017);
 
-                NercReport customerDetails = getComplaintDetails(w.getTicketId());
+            ExtraDataDetails customerDetails = getComplaintDetails(1017);
 
-                logger.info("EXTRA DATA IS >>>> " + extraData);
+            logger.info("EXTRA DATA IS >>>> " + extraData);
 //                String[] names = wdao.getFirstAndLastNames(w);
-                if (customerDetails.getCustomerFirstName() != null && !customerDetails.getCustomerFirstName().isEmpty()) {
-                    row.createCell(1).setCellValue(customerDetails.getCustomerFirstName());
-                } else {
-                    row.createCell(1).setCellValue(Cell.CELL_TYPE_BLANK);
-                }
+            if (customerDetails.getCustomerFirstName() != null && !customerDetails.getCustomerFirstName().isEmpty()) {
+                row.createCell(1).setCellValue(customerDetails.getCustomerFirstName());
+            } else {
+                row.createCell(1).setCellValue(Cell.CELL_TYPE_BLANK);
+            }
 //                row.createCell(1).setCellValue(getFirstName(w.getCustomerName()));
 
-                if (customerDetails.getCustomerLastName() != null && !customerDetails.getCustomerLastName().isEmpty()) {
-                    row.createCell(2).setCellValue(customerDetails.getCustomerLastName());
-                } else {
-                    row.createCell(2).setCellValue(Cell.CELL_TYPE_BLANK);
-                }
-
-                row.createCell(3).setCellValue(w.getAddressLine1());
-                row.createCell(4).setCellValue("");
-                row.createCell(5).setCellValue(w.getState());
-                row.createCell(6).setCellValue(customerDetails.getLga());
-                row.createCell(7).setCellValue(customerDetails.getArea());
-                row.createCell(8).setCellValue(w.getContactNumber());
-                row.createCell(9).setCellValue(w.getCustomerEmail());
-                row.createCell(10).setCellValue(w.getReferenceTypeData());
-                row.createCell(11).setCellValue(" EKEDP ");
-                row.createCell(12).setCellValue(w.getQueue().getName());
-                row.createCell(13).setCellValue(w.getQueueType().getName());
-                row.createCell(14).setCellValue(w.getBusinessUnit());
-                row.createCell(15).setCellValue(w.getState());
-                row.createCell(16).setCellValue(" EKO FORUM ");
-                row.createCell(17).setCellValue(customerDetails.getHouseNumber());
-                row.createCell(18).setCellValue(customerDetails.getCustomerAdress());
-                row.createCell(19).setCellValue(customerDetails.getComplaintLga());
-                row.createCell(20).setCellValue(w.getCity());
-                row.createCell(21).setCellValue("CIN");
-                row.createCell(22).setCellValue(w.getReferenceTypeData());
-                row.createCell(23).setCellValue(w.getCustomerTariff());
-                row.createCell(24).setCellValue(w.getDescription());
-                row.createCell(25).setCellValue(w.getCustomerTariff());
-                row.createCell(26).setCellValue(w.getAgentName());
-                row.createCell(27).setCellValue(wdao.getDateResolved(w));
-                String status = "";
-                if (w.getIsClosed() != null) {
-                    if (w.getCurrentStatus() != null) {
-                        status = w.getIsClosed() == 0 ? w.getCurrentStatus() : "CLOSED";
-                    }
-                }
-                row.createCell(28).setCellValue(status);
-
-                row.createCell(29).setCellValue(w.getSummary());
-
+            if (customerDetails.getCustomerLastName() != null && !customerDetails.getCustomerLastName().isEmpty()) {
+                row.createCell(2).setCellValue(customerDetails.getCustomerLastName());
+            } else {
+                row.createCell(2).setCellValue(Cell.CELL_TYPE_BLANK);
             }
 
-            String localfile = districts.get(i) + "_" + System.currentTimeMillis() + ".xlsx";
-            files.add(localfile);
-            String report = "/var/files/email/" + localfile;
-            FileOutputStream outputStream = new FileOutputStream(report);
-            workbook.write(outputStream);
-            outputStream.flush();
-            outputStream.close();
-            logger.info("file is " + report);
-
-        }
-
-        String fileName = "nerc-reports" + from + "to" + to + System.currentTimeMillis() + ".zip";
-        FileOutputStream fos = new FileOutputStream("/var/files/email/" + fileName);
-        ZipOutputStream zipOut = new ZipOutputStream(fos);
-        for (String srcFile : files) {
-            File fileToZip = new File("/var/files/email/" + srcFile);
-            FileInputStream fis = new FileInputStream(fileToZip);
-            ZipEntry zipEntry = new ZipEntry(fileToZip.getName());
-            zipOut.putNextEntry(zipEntry);
-
-            byte[] bytes = new byte[1024];
-            int length;
-            while ((length = fis.read(bytes)) >= 0) {
-                zipOut.write(bytes, 0, length);
+            row.createCell(3).setCellValue(w.getAddressLine1());
+            row.createCell(4).setCellValue("");
+            row.createCell(5).setCellValue(w.getState());
+            row.createCell(6).setCellValue(customerDetails.getLga());
+            row.createCell(7).setCellValue(customerDetails.getArea());
+            row.createCell(8).setCellValue(w.getContactNumber());
+            row.createCell(9).setCellValue(w.getCustomerEmail());
+            row.createCell(10).setCellValue(w.getReferenceTypeData());
+            row.createCell(11).setCellValue(" EKEDP ");
+            row.createCell(12).setCellValue(w.getQueue().getName());
+            row.createCell(13).setCellValue(w.getQueueType().getName());
+            row.createCell(14).setCellValue(w.getBusinessUnit());
+            row.createCell(15).setCellValue(w.getState());
+            row.createCell(16).setCellValue(" EKO FORUM ");
+            row.createCell(17).setCellValue(customerDetails.getHouseNumber());
+            row.createCell(18).setCellValue(customerDetails.getCustomerAdress());
+            row.createCell(19).setCellValue(customerDetails.getComplaintLga());
+            row.createCell(20).setCellValue(w.getCity());
+            row.createCell(21).setCellValue("CIN");
+            row.createCell(22).setCellValue(w.getReferenceTypeData());
+            row.createCell(23).setCellValue(w.getCustomerTariff());
+            row.createCell(24).setCellValue(w.getDescription());
+            row.createCell(25).setCellValue(w.getCustomerTariff());
+            row.createCell(26).setCellValue(w.getAgentName());
+            row.createCell(27).setCellValue(wdao.getDateResolved(w));
+            String status = "";
+            if (w.getIsClosed() != null) {
+                if (w.getCurrentStatus() != null) {
+                    status = w.getIsClosed() == 0 ? w.getCurrentStatus() : "CLOSED";
+                }
             }
-            fis.close();
-        }
-        zipOut.close();
-        fos.close();
-        long ended = System.currentTimeMillis();
+            row.createCell(28).setCellValue(status);
 
-        for (String f : files) {
-            File file = new File("/var/files/email/" + f);
-            file.delete();
+            row.createCell(29).setCellValue(w.getSummary());
+
         }
 
-        logger.info("------------Total processing time ------------" + ((ended - started) / 1000));
-        emm.sendAnEmail("a12wq_minions", "NERC customer care report", email, "Your report is now ready. Please find attached the requested report", fileName, null);
+//        String localfile = "NercReports" + "_" + System.currentTimeMillis() + ".xlsx";
+        String localfile = "nerc-reports" + from + "to" + to + System.currentTimeMillis() + ".xlsx";
+//        files.add(localfile);
+        String report = "/var/files/email/" + localfile;
+        FileOutputStream outputStream = new FileOutputStream(report);
+        workbook.write(outputStream);
+        outputStream.flush();
+        outputStream.close();
+        logger.info("file is " + report);
+
+        logger.info("------------Total processing time ------------");
+        emm.sendAnEmail("a12wq_minions", "NERC customer care report", email, "Your report is now ready. Please find attached the requested report", localfile, null);
 
     }
 
-    public NercReport getComplaintDetails(int ticketId) {
-        NercReport report = new NercReport();
+    public ExtraDataDetails getComplaintDetails(int ticketId) {
+        ExtraDataDetails report = new ExtraDataDetails();
         logger.info("to get extra data and spit it");
         String extraData = wdao.getWorkOrderExtraData(ticketId);
 
@@ -804,38 +766,4 @@ public class ReportReceiver {
 
         return value;
     }
-
-//    public void sendWorkOrderFileV1(String from, String to, String emailAddress) {
-////        List<String> err = validateEnumWorkOrder(from, to);
-//
-//        if (!from.isEmpty() && !to.isEmpty()) {
-//            final List<WorkOrderReport> workOrders = wdao.getWorkOrdersReport(from, to);
-//
-//            if (!workOrders.isEmpty()) {
-//                sendWorkOrderEmailAttachmentV1(emailAddress, workOrders);
-//            } else {
-//               logger.info("No work order found for given params");
-//            }
-//        } else {
-//            logger.info("Errors in validating to {} and from {}", to, from);
-//        }
-//    }
-//    
-//     private void sendWorkOrderEmailAttachmentV1(final String emailAddress, final List<WorkOrderReport> data) {
-//        L.info("Preparing to send WorkOrder email to ::  {}", emailAddress);
-//
-//        final File excelFileFor = createExcelFileForV1(WorkOrderReport.class, data, true);
-//        if (excelFileFor != null) {
-//            try {
-//                sendEmailTo(emailAddress, null, "Your work order download file", "Please find "
-//                        + "attached your WorkOrder download file", excelFileFor);
-//                logger.info("Successfully created and sent file to {}", emailAddress);
-//            } catch (Exception ex) {
-//                logger.error("An error occurred while trying to send workorder file to " + emailAddress,
-//                        ex);
-//            }
-//        } else {
-//            logger.warn("Couldn't create excel file to send to {}", emailAddress);
-//        }
-//    }
 }

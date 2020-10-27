@@ -7,7 +7,7 @@ package com.crowninteractive.net.nercreport.repository;
 
 import com.crowninteractive.net.nercreport.domainobject.Users;
 import com.crowninteractive.net.nercreport.domainobject.WorkOrder;
-import com.crowninteractive.net.nercreport.dto.NercReport;
+import com.crowninteractive.net.nercreport.dto.ExtraDataDetails;
 import com.crowninteractive.net.nercreport.exception.NercReportException;
 import java.util.Date;
 import java.util.List;
@@ -155,7 +155,7 @@ public class WorkOrderDao {
 //                    + "work_date AS workDate, current_status AS status FROM work_order WHERE create_time BETWEEN CAST(?1 AS DATE) AND CAST(?2 AS DATE) ORDER BY createdTime").
 //                    setParameter(1, from).setParameter(2, to).getResultList();
 //
-//            return list.stream().map(e -> new NercReport("3065412", 
+//            return list.stream().map(e -> new ExtraDataDetails("3065412", 
 //                    (String) e[1], (String) e[2], (String) e[3], "name", (String) e[5], (String) e[6],
 //                    (String) e[7], (Date) e[8], (String) e[9], (short) e[10],
 //                    (String) e[11], (String) e[12], (Date) e[13], (String) e[14])).collect(Collectors.toList());
@@ -178,4 +178,11 @@ public class WorkOrderDao {
         return resultList.isEmpty() ? null : resultList.get(0);
     }
 
+    public List<WorkOrder> getWorkOrdersforACustomer(String from, String to) {
+
+        return em.createNativeQuery("select * FROM work_order WHERE create_time BETWEEN CAST(?1 AS DATE)"
+                + " AND CAST(?2 AS DATE)", WorkOrder.class).
+                setParameter(1, from).setParameter(2, to)
+                .getResultList();
+    }
 }

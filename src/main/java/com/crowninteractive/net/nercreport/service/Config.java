@@ -21,7 +21,7 @@ public class Config extends Properties {
     private static Config INSTANCE;
 
     private void loadProps() throws IOException {
-        super.load(new FileInputStream("/var/config/wfm/config.properties"));
+        super.load(new FileInputStream("C:/var/config/wfm/config.properties"));
     }
 
     private Config() {
