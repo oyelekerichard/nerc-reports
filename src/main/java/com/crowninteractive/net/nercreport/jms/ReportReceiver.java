@@ -19,17 +19,13 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 import javax.jms.Message;
 import javax.jms.TextMessage;
-import org.apache.commons.mail.EmailAttachment;
 import org.apache.commons.mail.EmailException;
-import org.apache.commons.mail.HtmlEmail;
 
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
@@ -43,10 +39,11 @@ import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.format.datetime.DateFormatter;
 import org.springframework.jms.annotation.JmsListener;
 import org.springframework.stereotype.Component;
 
@@ -557,7 +554,7 @@ public class ReportReceiver {
 
     }
 
-    public void processWriteV5(String from, String to, String email) throws FileNotFoundException, IOException, NercReportException, EmailException {
+    public void processWriteV5(String from, String to, String email) throws FileNotFoundException, IOException, NercReportException, EmailException, ParseException {
         long started = System.currentTimeMillis();
         logger.info("--------------New Nerc report template ---------");
         logger.info("--------------Email-------------" + email);
@@ -627,11 +624,11 @@ public class ReportReceiver {
             Cell cell = row.createCell(0);
             cell.setCellValue("3065412");
 
-//            logger.info("EXTRA DATA IS >>>> " + wdao.getWorkOrderExtraData(w.gwetTicketId()));
-            logger.info("EXTRA DATA IS >>>> " + wdao.getWorkOrderExtraData(1017));
-            String extraData = wdao.getWorkOrderExtraData(1017);
+//            logger.info("EXTRA DATA IS >>>> " + wdao.getWorkOrderExtraData(w.getTicketId()));
+            logger.info("EXTRA DATA IS >>>> " + wdao.getWorkOrderExtraData(w.getTicketId()));
+            String extraData = wdao.getWorkOrderExtraData(w.getTicketId());
 
-            ExtraDataDetails customerDetails = getComplaintDetails(1017);
+            ExtraDataDetails customerDetails = getComplaintDetailsV1(w.getTicketId());
 
             logger.info("EXTRA DATA IS >>>> " + extraData);
 //                String[] names = wdao.getFirstAndLastNames(w);
@@ -750,6 +747,53 @@ public class ReportReceiver {
         String lga = subObject8.optString("lga");
         report.setLga(lga);
         String area = subObject8.optString("area");
+        report.setArea(area);
+
+        report.setHouseNumber(getHouseNumber(complaintAddress));
+
+        return report;
+    }
+    
+    public ExtraDataDetails getComplaintDetailsV1(int ticketId) throws ParseException {
+        ExtraDataDetails report = new ExtraDataDetails();
+        logger.info("to get extra data and spit it");
+        String extraData = wdao.getWorkOrderExtraData(ticketId);
+ 
+        JSONObject subObject1 = new JSONObject(extraData);
+
+//        JSONObject subObject1 = (JSONObject) extraData;
+
+        JSONObject json = subObject1.optJSONObject("customer_details");
+        String service = json.optString("service_band");
+        report.setServiceBand(service);
+        String complaintlga = json.optString("complaint_lga");
+        report.setComplaintLga(complaintlga);
+        String complaintarea = json.optString("complaint_area");
+        report.setComplaintArea(complaintarea);
+        logger.info("SERVICE BAND >>" + service);
+        logger.info("complaint_lga >>" + complaintlga);
+        logger.info("complaint_area >>> " + complaintarea);
+        String custormerType = json.optString("customer_type");
+        logger.info("custormerType >>" + custormerType);
+        report.setCustomerType(custormerType);
+
+        String firstName = json.optString("firstname");
+        report.setCustomerFirstName(firstName);
+        logger.info("firstName >>" + firstName);
+        String lastName = json.optString("lastname");
+        report.setCustomerLastName(lastName);
+
+        String complaintAddress = json.optString("address");
+
+        logger.info("ADDRESS >>> " + complaintAddress);
+
+        report.setCustomerAdress(complaintAddress);
+        String complaintState = json.optString("state");
+        report.setCutomerState(complaintState);
+
+        String lga = json.optString("customer_lga");
+        report.setLga(lga);
+        String area = json.optString("customer_area");
         report.setArea(area);
 
         report.setHouseNumber(getHouseNumber(complaintAddress));

@@ -16,6 +16,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import com.google.gson.Gson;
+import java.io.FileNotFoundException;
+import org.json.simple.parser.ParseException;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -74,7 +76,7 @@ public class NERCController {
     @GetMapping("start_report_v2")
     public String startReportV2(@RequestParam("from") String from,
             @RequestParam("to") String to,
-            @RequestParam("email") String email) {
+            @RequestParam("email") String email) throws FileNotFoundException, ParseException {
         try {
             reportReceiver.processWriteV5(from, to, email);
             awe = new BaseResponse(0, "success");
@@ -86,15 +88,15 @@ public class NERCController {
         return new Gson().toJson(awe);
     }
 
-//    @GetMapping("extra_data")
-//    public ResponseEntity extraData(@RequestParam("ticketId") int ticketId) throws ParseException {
-//        try {
-//            reportReceiver.getExtraData(ticketId);
-//        } catch (Exception ex) {
-//            Logger.getLogger(NERCController.class.getName()).log(Level.SEVERE, null, ex);
-//        }
-//
-//        return new ResponseEntity(reportReceiver.getExtraData(ticketId), HttpStatus.OK);
-//    }
+    @GetMapping("extra_data")
+    public ResponseEntity extraData(@RequestParam("ticketId") int ticketId) throws ParseException {
+        try {
+            reportReceiver.getComplaintDetailsV1(ticketId);
+        } catch (Exception ex) {
+            Logger.getLogger(NERCController.class.getName()).log(Level.SEVERE, null, ex);
+        }
+
+        return new ResponseEntity(reportReceiver.getComplaintDetailsV1(ticketId), HttpStatus.OK);
+    }
 
 }
