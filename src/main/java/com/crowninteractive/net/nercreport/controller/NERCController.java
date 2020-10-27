@@ -38,23 +38,23 @@ public class NERCController {
     public String getTest() {
         return "nerc is running ";
     }
-
-    @GetMapping("start_report")
-    public ResponseEntity startReport(@RequestParam("from") String from,
-            @RequestParam("to") String to,
-            @RequestParam("email") String email) {
-        new Thread(new Runnable() {
-            public void run() {
-                try {
-                    reportReceiver.processWriteV3(from, to, email);
-                } catch (IOException | NercReportException | EmailException ex) {
-                    Logger.getLogger(NERCController.class.getName()).log(Level.SEVERE, null, ex);
-                }
-            }
-        }).start();
-
-        return new ResponseEntity("NERC Report Request Received And Is Been Processed", HttpStatus.OK);
-    }
+//
+//    @GetMapping("start_report")
+//    public ResponseEntity startReport(@RequestParam("from") String from,
+//            @RequestParam("to") String to,
+//            @RequestParam("email") String email) {
+//        new Thread(new Runnable() {
+//            public void run() {
+//                try {
+//                    reportReceiver.processWriteV3(from, to, email);
+//                } catch (IOException | NercReportException | EmailException ex) {
+//                    Logger.getLogger(NERCController.class.getName()).log(Level.SEVERE, null, ex);
+//                }
+//            }
+//        }).start();
+//
+//        return new ResponseEntity("NERC Report Request Received And Is Been Processed", HttpStatus.OK);
+//    }
 
     @GetMapping("start_report_v1")
     public String startReportV1(@RequestParam("from") String from,
