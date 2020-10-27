@@ -73,6 +73,16 @@ public class WorkOrder implements Serializable {
     private String businessUnit;
     @Column(name = "customer_tariff", length = 50)
     private String customerTariff;
+    @Column(name = "customer_email", length = 50)
+    private String customerEmail;
+
+    public String getCustomerEmail() {
+        return customerEmail;
+    }
+
+    public void setCustomerEmail(String customerEmail) {
+        this.customerEmail = customerEmail;
+    }
     @Basic(optional = false)
     @Column(name = "priority", nullable = false, length = 10)
     private String priority;
@@ -491,8 +501,6 @@ public class WorkOrder implements Serializable {
     public void setWorkOrderStatusId(WorkOrderStatus workOrderStatusId) {
         this.workOrderStatusId = workOrderStatusId;
     }
-    
-    
 
     @Override
     public int hashCode() {

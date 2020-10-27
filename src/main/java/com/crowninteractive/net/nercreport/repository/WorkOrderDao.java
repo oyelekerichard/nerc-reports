@@ -7,7 +7,9 @@ package com.crowninteractive.net.nercreport.repository;
 
 import com.crowninteractive.net.nercreport.domainobject.Users;
 import com.crowninteractive.net.nercreport.domainobject.WorkOrder;
+import com.crowninteractive.net.nercreport.dto.NercReport;
 import com.crowninteractive.net.nercreport.exception.NercReportException;
+import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 import javax.persistence.EntityManager;
@@ -108,7 +110,7 @@ public class WorkOrderDao {
         }
     }
 
-   public List<WorkOrder> getWorkOrderByParamsV2(String district, String from, String to, String queueTypeIds, String tariffs) {
+    public List<WorkOrder> getWorkOrderByParamsV2(String district, String from, String to, String queueTypeIds, String tariffs) {
         String qry = "select * from work_order where business_unit='%s' and date(create_time) >= date('%s') and date(create_time) <= date('%s') "
                 + "and queue_type_id in (" + queueTypeIds + ")";
         if (tariffs.length() > 0) {
@@ -116,6 +118,64 @@ public class WorkOrderDao {
         }
         Query q = em.createNativeQuery(String.format(qry, district, from, to), WorkOrder.class);
         return q.getResultList();
+    }
+
+    public String[] getFirstAndLastNames(WorkOrder w) {
+        String firstAndLastName = w.getCustomerName();
+
+        String[] noname = null;
+        if (w.getCustomerName() != null) {
+            String[] splited = firstAndLastName.split("\\s+");
+
+            return splited;
+        } else {
+            return noname;
+        }
+    }
+
+    public String[] getAddresses(WorkOrder w) {
+        String firstAndLastName = w.getAddressLine1();
+
+        String[] splited = firstAndLastName.split("\\s+");
+
+        return splited;
+    }
+
+//   public List<NercReport> getNercReport(String from, String to) {
+//
+////            em = emf.createEntityManager();
+//            List<Object[]> list = em.createNativeQuery("SELECT customer_name AS CUSTOMER_FIRSTNAME, summary, "
+//                    + "(select name from queue WHERE id = queue_id) AS queue,"
+//                    + "(SELECT NAME FROM queue_type WHERE id = queue_type_id) AS queueType, "
+//                    + "priority, business_unit AS region,customer_email AS email, "
+//                    + "contact_number AS contactNumber, create_time AS createdTime,"
+//                    + "(select firstname from users where id = created_by) AS createdby, "
+//                    + "is_assigned AS isAssigned, channel, "
+//                    + "(SELECT firstname FROM users WHERE id = (SELECT user_id FROM engineer WHERE id = engineer_id)) AS resource, "
+//                    + "work_date AS workDate, current_status AS status FROM work_order WHERE create_time BETWEEN CAST(?1 AS DATE) AND CAST(?2 AS DATE) ORDER BY createdTime").
+//                    setParameter(1, from).setParameter(2, to).getResultList();
+//
+//            return list.stream().map(e -> new NercReport("3065412", 
+//                    (String) e[1], (String) e[2], (String) e[3], "name", (String) e[5], (String) e[6],
+//                    (String) e[7], (Date) e[8], (String) e[9], (short) e[10],
+//                    (String) e[11], (String) e[12], (Date) e[13], (String) e[14])).collect(Collectors.toList());
+//
+//        
+//    }
+    public String getQueueName(int queueId) {
+        List<String> resultList = em.createNativeQuery("select name from queue where id=?1 ").
+                setParameter(1, queueId).
+                getResultList();
+
+        return resultList.isEmpty() ? null : resultList.get(0);
+    }
+
+    public String getWorkOrderExtraData(int ticketId) {
+        List<String> resultList = em.createNativeQuery("select extra_data from work_order where ticket_id=?1 ").
+                setParameter(1, ticketId).
+                getResultList();
+
+        return resultList.isEmpty() ? null : resultList.get(0);
     }
 
 }
