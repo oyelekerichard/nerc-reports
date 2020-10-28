@@ -11,7 +11,6 @@ import com.crowninteractive.net.nercreport.dto.BaseResponse;
 import com.crowninteractive.net.nercreport.dto.ExtraDataDetails;
 import com.crowninteractive.net.nercreport.exception.NercReportException;
 import com.crowninteractive.net.nercreport.repository.WorkOrderDao;
-import com.crowninteractive.net.nercreport.service.ReportService;
 import com.crowninteractive.net.nercreport.service.SendEmail;
 import java.io.File;
 import java.io.FileInputStream;
@@ -61,8 +60,6 @@ public class ReportReceiver {
     private WorkOrderDao wdao;
     @Autowired
     private SendEmail emm;
-    
-    private ReportService reportService;
 
     BaseResponse awe;
 
@@ -81,6 +78,26 @@ public class ReportReceiver {
             }
         }
 
+    }
+
+    private String getBillingId(WorkOrder w) {
+
+        try {
+            return (w.getReferenceType() != null && w.getReferenceTypeData() != null && w.getReferenceType().equals("Billing ID") && !w.getReferenceTypeData().equals("Not Applicable")) ? String.valueOf(w.getReferenceTypeData()) : "";
+        } catch (Exception e) {
+            return "";
+        }
+    }
+
+    private String getResolution(WorkOrder w) {
+        switch (w.getCurrentStatus().toLowerCase()) {
+            case "closed":
+            case "completed":
+            case "resolved":
+                return w.getCurrentStatus();
+            default:
+                return "PENDING";
+        }
     }
 
     public void processWriteV3(String from, String to, String email) throws FileNotFoundException, IOException, NercReportException, EmailException {
@@ -173,7 +190,7 @@ public class ReportReceiver {
                 }
 
                 row.createCell(3).setCellValue(w.getAddressLine1() + ", " + w.getCity());
-                row.createCell(4).setCellValue(reportService.getBillingId(w));
+                row.createCell(4).setCellValue(getBillingId(w));
                 row.createCell(5).setCellValue(String.valueOf(w.getContactNumber()));
                 row.createCell(6).setCellValue(String.valueOf(w.getCustomerTariff()));
                 row.createCell(7).setCellValue(String.valueOf(w.getBusinessUnit()));
@@ -187,7 +204,7 @@ public class ReportReceiver {
                 }
                 row.createCell(10).setCellValue(status);
                 row.createCell(11).setCellValue(wdao.getDateResolved(w));
-                row.createCell(12).setCellValue(reportService.getResolution(w));
+                row.createCell(12).setCellValue(getResolution(w));
                 row.createCell(13).setCellValue(w.getQueueType().getName());
 
             }
@@ -300,7 +317,7 @@ public class ReportReceiver {
                 }
 
                 row.createCell(3).setCellValue(w.getAddressLine1() + ", " + w.getCity());
-                row.createCell(4).setCellValue(reportService.getBillingId(w));
+                row.createCell(4).setCellValue(getBillingId(w));
                 row.createCell(5).setCellValue(String.valueOf(w.getContactNumber()));
                 row.createCell(6).setCellValue(String.valueOf(w.getCustomerTariff()));
                 row.createCell(7).setCellValue(String.valueOf(w.getBusinessUnit()));
@@ -314,7 +331,7 @@ public class ReportReceiver {
                 }
                 row.createCell(10).setCellValue(status);
                 row.createCell(11).setCellValue(wdao.getDateResolved(w));
-                row.createCell(12).setCellValue(reportService.getResolution(w));
+                row.createCell(12).setCellValue(getResolution(w));
                 row.createCell(13).setCellValue(w.getQueueType().getName());
 
             }
@@ -440,7 +457,7 @@ public class ReportReceiver {
                 String extraData = wdao.getWorkOrderExtraData(w.getTicketId());
                 if (extraData != null) {
 
-                    ExtraDataDetails customerDetails = reportService.getComplaintDetails(w.getTicketId());
+                    ExtraDataDetails customerDetails = getComplaintDetails(w.getTicketId());
 
                     logger.info("EXTRA DATA IS >>>> " + extraData);
 //                String[] names = wdao.getFirstAndLastNames(w);
@@ -610,7 +627,7 @@ public class ReportReceiver {
 //            logger.info("EXTRA DATA IS >>>> " + wdao.getWorkOrderExtraData(w.getTicketId()));
 //            logger.info("EXTRA DATA IS >>>> " + wdao.getWorkOrderExtraData(w.getTicketId()));
 //            String extraData = wdao.getWorkOrderExtraData(w.getTicketId());
-            ExtraDataDetails customerDetails = reportService.getComplaintDetailsV1(w.getTicketId());
+            ExtraDataDetails customerDetails = getComplaintDetailsV1(w.getTicketId());
 
 //            logger.info("EXTRA DATA IS >>>> " + extraData);
 //                String[] names = wdao.getFirstAndLastNames(w);
@@ -676,5 +693,136 @@ public class ReportReceiver {
         logger.info("------------Total processing time ------------");
         emm.sendAnEmail("a12wq_minions", "NERC customer care report", email, "Your report is now ready. Please find attached the requested report", localfile, null);
 
+    }
+
+    public ExtraDataDetails getComplaintDetails(int ticketId) {
+        ExtraDataDetails report = new ExtraDataDetails();
+        logger.info("to get extra data and spit it");
+        String extraData = wdao.getWorkOrderExtraData(ticketId);
+
+        JSONArray array = new JSONArray(extraData);
+
+        logger.info("arrays >> " + array);
+
+        JSONObject subObject1 = (JSONObject) array.get(0);
+
+        String service = subObject1.optString("service_band");
+        report.setServiceBand(service);
+        JSONObject subObject2 = (JSONObject) array.get(1);
+        String complaintlga = subObject2.optString("complaint_lga");
+        report.setComplaintLga(complaintlga);
+        String complaintarea = subObject2.optString("complaint_area");
+        report.setComplaintArea(complaintarea);
+        logger.info("SERVICE BAND >>" + service);
+        logger.info("complaint_lga >>" + complaintlga);
+        logger.info("complaint_area >>> " + complaintarea);
+
+        JSONObject subObject3 = (JSONObject) array.get(2);
+
+        logger.info("CUSTOMER DETAILS >>> " + subObject3.optJSONArray("customer_details"));
+
+        JSONArray customerArray = subObject3.optJSONArray("customer_details");
+        JSONObject subObject4 = (JSONObject) customerArray.get(0);
+        String custormerType = subObject4.optString("customer_type");
+        logger.info("custormerType >>" + custormerType);
+        report.setCustomerType(custormerType);
+        JSONObject subObject5 = (JSONObject) customerArray.get(1);
+        String firstName = subObject5.optString("firstname");
+        report.setCustomerFirstName(firstName);
+        logger.info("firstName >>" + firstName);
+        String lastName = subObject5.optString("lastname");
+        report.setCustomerLastName(lastName);
+        JSONObject subObject6 = (JSONObject) customerArray.get(2);
+        String complaintAddress = subObject6.optString("address");
+
+        logger.info("ADDRESS >>> " + complaintAddress);
+
+        report.setCustomerAdress(complaintAddress);
+        JSONObject subObject7 = (JSONObject) customerArray.get(3);
+        String complaintState = subObject7.optString("state");
+        report.setCutomerState(complaintState);
+        JSONObject subObject8 = (JSONObject) customerArray.get(4);
+        String lga = subObject8.optString("lga");
+        report.setLga(lga);
+        String area = subObject8.optString("area");
+        report.setArea(area);
+
+        report.setHouseNumber(getHouseNumber(complaintAddress));
+
+        return report;
+    }
+
+    public ExtraDataDetails getComplaintDetailsV1(int ticketId) throws ParseException {
+        ExtraDataDetails report = new ExtraDataDetails();
+        logger.info("to get extra data and spit it");
+        String extraData = wdao.getWorkOrderExtraData(ticketId);
+
+        logger.info("INSDE EXTRA DATA DETAILS METHOD >>> " + extraData);
+
+        if (extraData != null && !extraData.isEmpty()) {
+            JSONObject subObject1 = new JSONObject(extraData);
+
+            logger.info("INSDE EXTRA DATA DETAILS METHOD JSONOBJECT>>> " + subObject1);
+//        JSONObject subObject1 = (JSONObject) extraData;
+
+            JSONObject json = subObject1.optJSONObject("customer_details");
+            String service = json.optString("service_band");
+            report.setServiceBand(service);
+            String complaintlga = json.optString("complaint_lga");
+            report.setComplaintLga(complaintlga);
+            String complaintarea = json.optString("complaint_area");
+            report.setComplaintArea(complaintarea);
+            logger.info("SERVICE BAND >>" + service);
+            logger.info("complaint_lga >>" + complaintlga);
+            logger.info("complaint_area >>> " + complaintarea);
+            String custormerType = json.optString("customer_type");
+            logger.info("custormerType >>" + custormerType);
+            report.setCustomerType(custormerType);
+
+            String firstName = json.optString("firstname");
+            report.setCustomerFirstName(firstName);
+            logger.info("firstName >>" + firstName);
+            String lastName = json.optString("lastname");
+            report.setCustomerLastName(lastName);
+
+            String complaintAddress = json.optString("address");
+
+            logger.info("ADDRESS >>> " + complaintAddress);
+
+            report.setCustomerAdress(complaintAddress);
+            String complaintState = json.optString("state");
+            report.setCutomerState(complaintState);
+
+            String lga = json.optString("customer_lga");
+            report.setLga(lga);
+            String area = json.optString("customer_area");
+            report.setArea(area);
+
+            report.setHouseNumber(getHouseNumber(complaintAddress));
+        } else {
+            report.setArea("");
+            report.setComplaintArea("");
+            report.setComplaintLga("");
+            report.setCustomerAdress("");
+            report.setCustomerFirstName(extraData);
+            report.setCustomerLastName("");
+            report.setCustomerType("");
+            report.setCutomerState("");
+            report.setHouseNumber(0);
+            report.setLga("");
+            report.setServiceBand("");
+        }
+
+        return report;
+    }
+
+    public static int getHouseNumber(String address) {
+        String houseNumber = address.replaceAll("[^0-9]", " ");
+
+        int value = Integer.parseInt(address.replaceAll("[^0-9]", ""));
+
+        logger.info("numbers only >>> " + houseNumber);
+
+        return value;
     }
 }
