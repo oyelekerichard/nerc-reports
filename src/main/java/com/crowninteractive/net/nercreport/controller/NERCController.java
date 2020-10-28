@@ -8,6 +8,7 @@ package com.crowninteractive.net.nercreport.controller;
 import com.crowninteractive.net.nercreport.dto.BaseResponse;
 import com.crowninteractive.net.nercreport.exception.NercReportException;
 import com.crowninteractive.net.nercreport.jms.ReportReceiver;
+import com.crowninteractive.net.nercreport.service.ReportService;
 import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -33,7 +34,8 @@ public class NERCController {
 
     @Autowired
     private ReportReceiver reportReceiver;
-    
+    @Autowired
+    private ReportService reportService;
     BaseResponse awe;
 
     @GetMapping("test")
@@ -72,7 +74,7 @@ public class NERCController {
 //        return new ResponseEntity("NERC Report Request Received And Is Been Processed", HttpStatus.OK);
         return new Gson().toJson(awe);
     }
-    
+
     @GetMapping("start_report_v2")
     public String startReportV2(@RequestParam("from") String from,
             @RequestParam("to") String to,
@@ -91,12 +93,12 @@ public class NERCController {
     @GetMapping("extra_data")
     public ResponseEntity extraData(@RequestParam("ticketId") int ticketId) throws ParseException {
         try {
-            reportReceiver.getComplaintDetailsV1(ticketId);
+            reportService.getComplaintDetailsV1(ticketId);
         } catch (Exception ex) {
             Logger.getLogger(NERCController.class.getName()).log(Level.SEVERE, null, ex);
         }
 
-        return new ResponseEntity(reportReceiver.getComplaintDetailsV1(ticketId), HttpStatus.OK);
+        return new ResponseEntity(reportService.getComplaintDetailsV1(ticketId), HttpStatus.OK);
     }
 
 }
