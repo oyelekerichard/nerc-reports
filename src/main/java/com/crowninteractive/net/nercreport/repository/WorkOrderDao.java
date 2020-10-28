@@ -180,8 +180,8 @@ public class WorkOrderDao {
 
     public List<WorkOrder> getWorkOrdersforACustomer(String from, String to) {
 
-        return em.createNativeQuery("select * FROM work_order WHERE create_time BETWEEN CAST(?1 AS DATE)"
-                + " AND CAST(?2 AS DATE)", WorkOrder.class).
+        return em.createNativeQuery("select * FROM work_order WHERE create_time BETWEEN CAST(?1 AS DATE) "
+                + "AND DATE_ADD(CAST(?2 AS DATE), INTERVAL 1 day)", WorkOrder.class).
                 setParameter(1, from).setParameter(2, to)
                 .getResultList();
     }
