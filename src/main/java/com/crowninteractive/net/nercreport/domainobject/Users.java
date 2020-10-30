@@ -307,4 +307,9 @@ public class Users implements Serializable {
         this.isActive = isActive;
     }
 
+    @Override
+    public String toString() {
+        return "Users{" + "id=" + id + ", token=" + token + ", ownerId=" + ownerId + ", newpass=" + newpass + ", level=" + level + ", email=" + email + ", firstname=" + firstname + ", lastname=" + lastname + ", password=" + password + ", department=" + department + ", salt=" + salt + ", roles=" + roles + ", queues=" + queues + ", districts=" + districts + ", tariffs=" + tariffs + ", statuses=" + statuses + ", tempPassword=" + tempPassword + ", sentEmail=" + sentEmail + ", phone=" + phone + ", logonTime=" + logonTime + ", hasConfirmed=" + hasConfirmed + ", isEngineer=" + isEngineer + ", createTime=" + createTime + ", updateTime=" + updateTime + ", isActive=" + isActive + '}';
+    }
+
 }

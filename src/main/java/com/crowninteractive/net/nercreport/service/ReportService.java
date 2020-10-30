@@ -247,23 +247,57 @@ public class ReportService {
             return 0;
         } else {
             if (sb.toString().length() >= 4) {
+                logger.info("inside house number method V223>>> " + sb.toString());
                 return Integer.valueOf(sb.toString().substring(0, 1));
             } else {
+                logger.info("inside house number method V233>>> " + address);
                 return Integer.valueOf(sb.toString());
             }
         }
     }
 
-    public String getAssigneeName(int userId) {
+    public String getEngineerAssigned(int userId) {
         logger.info("inside getAssigneeName method >>> " + userId);
 
+        Users u = null;
 //        String fullname = "";
         String firstName = "";
         String lastName = "";
 
-        Users u = wdao.getAssigned(userId);
+        u = wdao.getAssigned(userId);
         logger.info("inside getAssigneeName method 22 >>> ");
-        logger.info("inside getAssigneeName method 22 >>> "+u.getFirstname().toString());
+        logger.info("inside getAssigneeName method 22 >>> " + u.getFirstname().toString());
+
+        if (u.getFirstname() != null && !u.getFirstname().isEmpty()) {
+            firstName = u.getFirstname();
+        } else {
+            firstName = " ";
+        }
+
+        if (u.getLastname() != null && !u.getLastname().isEmpty()) {
+            lastName = u.getLastname();
+        } else {
+            firstName = " ";
+        }
+        logger.info("inside getAssigneeName method >>> " + firstName);
+        logger.info("inside getAssigneeName method >>> " + lastName);
+
+        String fullname = firstName + " " + lastName;
+        logger.info("inside getAssigneeName method >>> " + fullname);
+        return fullname;
+    }
+
+    public String getEngineerAssignedByUpdated(int userId) {
+        logger.info("inside getEngineerAssignedByUpdated method >>> " + userId);
+
+        Users u = null;
+//        String fullname = "";
+        String firstName = "";
+        String lastName = "";
+
+        u = wdao.getUpdatedBy(userId);
+        logger.info("inside getEngineerAssignedByUpdated method 22 >>> ");
+        logger.info("inside getEngineerAssignedByUpdated method 22 >>> " + u.getFirstname().toString());
 
         if (u.getFirstname() != null && !u.getFirstname().isEmpty()) {
             firstName = u.getFirstname();

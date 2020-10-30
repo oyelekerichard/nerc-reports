@@ -699,19 +699,30 @@ public class ReportReceiver {
 
             row.createCell(25).setCellValue(w.getCreateTime());
             row.getCell(25).setCellStyle(cellStyle);
-//            row.createCell(26).setCellValue(w.getReportedBy());
-            if (w.getIsAssigned()>0 && reportService.getAssigneeName(w.getEngineerId()) != null){
-                    row.createCell(26).setCellValue(reportService.getAssigneeName(w.getEngineerId()));
+//            if (w.getReportedBy() != null && !w.getReportedBy().equals("") && !w.getReportedBy().isEmpty()) {
+//                row.createCell(26).setCellValue(w.getReportedBy());
+//            } else {
+//                row.createCell(26).setCellValue("");
+//            }
+
+            if (w.getEngineerId() != null && w.getEngineerId() > 0) {
+
+                String engineerName = reportService.getEngineerAssigned(w.getEngineerId());
+                row.createCell(26).setCellValue(engineerName);
+            } else if (w.getUpdatedBy() != null && w.getUpdatedBy() > 0) {
+                String engineerName = reportService.getEngineerAssignedByUpdated(w.getUpdatedBy());
+                row.createCell(26).setCellValue(engineerName);
+            } else {
+                row.createCell(26).setCellValue("");
             }
-            else
-            {
-                if(wdao.getAssigneefromWorkOrderUpdate(w.getTicketId())!=null && wdao.getAssigneefromWorkOrderUpdate(w.getTicketId())>0 && 
-                        reportService.getAssigneeName(wdao.getAssigneefromWorkOrderUpdate(w.getTicketId())) != null)
-            
-                row.createCell(26).setCellValue(reportService.getAssigneeName(wdao.getAssigneefromWorkOrderUpdate(w.getTicketId())));
-                else
-                    row.createCell(26).setCellValue("");
-            }
+//          
+//                if(wdao.getAssigneefromWorkOrderUpdate(w.getTicketId())!=null && wdao.getAssigneefromWorkOrderUpdate(w.getTicketId())>0 && 
+//                        reportService.getAssigneeName(wdao.getAssigneefromWorkOrderUpdate(w.getTicketId())) != null)
+//            
+//                row.createCell(26).setCellValue(reportService.getAssigneeName(wdao.getAssigneefromWorkOrderUpdate(w.getTicketId())));
+//                else
+//                    row.createCell(26).setCellValue("");
+//            }
             row.createCell(27).setCellValue(wdao.getDateResolved(w));
             row.getCell(27).setCellStyle(cellStyle);
 //            row.createCell(27).setCellValue(w.getClosedTime());

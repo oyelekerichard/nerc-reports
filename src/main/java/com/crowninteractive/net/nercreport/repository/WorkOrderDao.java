@@ -186,14 +186,30 @@ public class WorkOrderDao {
                 .getResultList();
     }
 
-    public Users getAssigned(int userId) {
-        List<Users> resultList = em.createNativeQuery("select * from users where id=?1 ", Users.class).
+    public Users getAssigned(int engineerId) {
+        List<Users> resultList = em.createNativeQuery("select * from users where id=(SELECT user_id from engineer where id =?1)", Users.class).
+                setParameter(1, engineerId).
+                getResultList();
+
+        return resultList.isEmpty() ? null : resultList.get(0);
+        
+//        List<Users> resultList = em.createNativeQuery("select * from users where is_active=1 and id=?1 and owner_id=?2 limit 1", Users.class).
+//                    setParameter(1, userId).setParameter(2, 1).getResultList();
+//            return resultList.isEmpty() ? null : resultList.get(0);
+    }
+
+    public Users getUpdatedBy(int userId) 
+    {
+        List<Users> resultList = em.createNativeQuery("select * from users where id =?1", Users.class).
                 setParameter(1, userId).
                 getResultList();
 
         return resultList.isEmpty() ? null : resultList.get(0);
+        
+//        List<Users> resultList = em.createNativeQuery("select * from users where is_active=1 and id=?1 and owner_id=?2 limit 1", Users.class).
+//                    setParameter(1, userId).setParameter(2, 1).getResultList();
+//            return resultList.isEmpty() ? null : resultList.get(0);
     }
-
     public Integer getAssigneefromWorkOrderUpdate(int ticketId) {
         List<Integer> resultList = em.createNativeQuery("select updated_by from work_order_update where work_order_id = (select id from work_order where ticket_id=?1) ").
                 setParameter(1, ticketId).

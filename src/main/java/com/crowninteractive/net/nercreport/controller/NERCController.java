@@ -106,4 +106,16 @@ public class NERCController {
         return new ResponseEntity(reportService.getComplaintDetailsV1(ticketId), HttpStatus.OK);
     }
 
+    @GetMapping("user")
+    public ResponseEntity getUser(@RequestParam("userId") int userId) throws ParseException {
+        try {
+            reportService.getEngineerAssigned(userId);
+            logger.info("USERSSSSSSSS >>>> "+reportService.getEngineerAssigned(userId));
+        } catch (Exception ex) {
+            Logger.getLogger(NERCController.class.getName()).log(Level.SEVERE, null, ex);
+        }
+
+        return new ResponseEntity(reportService.getComplaintDetailsV1(userId), HttpStatus.OK);
+    }
+//    (reportService.getAssigneeName(w.getEngineerId()) != null){
 }
