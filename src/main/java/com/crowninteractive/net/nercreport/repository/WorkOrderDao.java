@@ -185,4 +185,21 @@ public class WorkOrderDao {
                 setParameter(1, from).setParameter(2, to)
                 .getResultList();
     }
+
+    public Users getAssigned(int userId) {
+        List<Users> resultList = em.createNativeQuery("select * from users where id=?1 ", Users.class).
+                setParameter(1, userId).
+                getResultList();
+
+        return resultList.isEmpty() ? null : resultList.get(0);
+    }
+
+    public Integer getAssigneefromWorkOrderUpdate(int ticketId) {
+        List<Integer> resultList = em.createNativeQuery("select updated_by from work_order_update where work_order_id = (select id from work_order where ticket_id=?1) ").
+                setParameter(1, ticketId).
+                getResultList();
+
+        return resultList.isEmpty() ? null : resultList.get(0);
+   
+    }
 }

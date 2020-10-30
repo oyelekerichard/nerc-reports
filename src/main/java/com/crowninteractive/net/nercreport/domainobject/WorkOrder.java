@@ -83,6 +83,40 @@ public class WorkOrder implements Serializable {
     public void setCustomerEmail(String customerEmail) {
         this.customerEmail = customerEmail;
     }
+
+    @Column(name = "email", length = 50)
+    private String email;
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+    
+    @Column(name = "engineer_id", nullable = false, length = 50)
+    private Integer engineerId ;
+
+    public Integer getEngineerId() {
+        return engineerId;
+    }
+
+    public void setEngineerId(Integer engineerId) {
+        this.engineerId = engineerId;
+    }
+    
+    @Column(name = "updated_by", nullable = false, length = 50)
+    private Integer updatedBy = 0;
+
+    public Integer getUpdatedBy() {
+        return updatedBy;
+    }
+
+    public void setUpdatedBy(Integer updatedBy) {
+        this.updatedBy = updatedBy;
+    }
+
     @Basic(optional = false)
     @Column(name = "priority", nullable = false, length = 10)
     private String priority;

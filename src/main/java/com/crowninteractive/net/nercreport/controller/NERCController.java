@@ -8,6 +8,7 @@ package com.crowninteractive.net.nercreport.controller;
 import com.crowninteractive.net.nercreport.dto.BaseResponse;
 import com.crowninteractive.net.nercreport.exception.NercReportException;
 import com.crowninteractive.net.nercreport.jms.ReportReceiver;
+import com.crowninteractive.net.nercreport.service.ReportService;
 import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -18,6 +19,7 @@ import org.springframework.http.ResponseEntity;
 import com.google.gson.Gson;
 import java.io.FileNotFoundException;
 import org.json.simple.parser.ParseException;
+import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -33,8 +35,12 @@ public class NERCController {
 
     @Autowired
     private ReportReceiver reportReceiver;
-    
+    @Autowired
+    private ReportService reportService;
+        
     BaseResponse awe;
+
+    private static final org.slf4j.Logger logger = LoggerFactory.getLogger(NERCController.class);
 
     @GetMapping("test")
     public String getTest() {
@@ -76,7 +82,7 @@ public class NERCController {
     @GetMapping("start_report_v2")
     public String startReportV2(@RequestParam("from") String from,
             @RequestParam("to") String to,
-            @RequestParam("email") String email) throws FileNotFoundException, ParseException {
+            @RequestParam("email") String email) throws FileNotFoundException, ParseException, java.text.ParseException {
         try {
             reportReceiver.processWriteV5(from, to, email);
             awe = new BaseResponse(0, "success");
@@ -91,12 +97,13 @@ public class NERCController {
     @GetMapping("extra_data")
     public ResponseEntity extraData(@RequestParam("ticketId") int ticketId) throws ParseException {
         try {
-            reportReceiver.getComplaintDetailsV1(ticketId);
+            reportService.getComplaintDetailsV1(ticketId);
+            logger.info("house number version 2 >>>> "+reportService.getHouseNumberv2("my name is senator"));
         } catch (Exception ex) {
             Logger.getLogger(NERCController.class.getName()).log(Level.SEVERE, null, ex);
         }
 
-        return new ResponseEntity(reportReceiver.getComplaintDetailsV1(ticketId), HttpStatus.OK);
+        return new ResponseEntity(reportService.getComplaintDetailsV1(ticketId), HttpStatus.OK);
     }
 
 }
